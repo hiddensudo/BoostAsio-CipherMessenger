@@ -22,8 +22,8 @@ private:
 
     boost::asio::streambuf readMsg;
 
-    std::wstring text;    
-    std::wstring key;
+    std::string key;
+    bool isKeyGenerate;
 
 public:
     Server(boost::asio::io_context& ioContext, int port);

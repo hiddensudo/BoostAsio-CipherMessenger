@@ -10,9 +10,9 @@
 Client::Client(boost::asio::io_context& ioc, const std::string& host,
                const std::string& port)
     : ioContext_(ioc), socket_(ioc) {
+        this->isKeyGenerate = false;
         boost::asio::ip::tcp::resolver resolver(ioContext_);
         boost::asio::ip::tcp::resolver::results_type endpoints = resolver.resolve(host, port);
-
         doConnect(endpoints);
     }
 
@@ -22,7 +22,10 @@ Client::~Client() {
 
 void Client::handleConnect(const boost::system::error_code& error) {
     if(!error) {
-        std::cout << "Client was connected to the server" << std::endl;
+        std::cout << "Client was connected to the server" << std::endl
+        << "Enter secret key: " << std::endl;
+        std::getline(std::cin, this->key);
+        this->isKeyGenerate = true;
         doRead();
     } else {
         std::cout << "Error: " << error << std::endl;
@@ -43,7 +46,8 @@ void Client::handleWrite(const boost::system::error_code& error) {
 void Client::doWrite(const std::string& msg) {
     std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     std::wstring text = converter.from_bytes(msg);
-    OneTimePad otp(text, L"дота");
+    std::wstring wkey = converter.from_bytes(this->key);
+    OneTimePad otp(text, wkey);
     text = otp.cipher();
     std::string converted_msg = converter.to_bytes(text);
     std::string message = converted_msg + '\n';
@@ -54,13 +58,16 @@ void Client::doWrite(const std::string& msg) {
 void Client::writeInTerminal() {
     std::string msg;
     while(true) {
-        std::getline(std::cin, msg);
+        if(isKeyGenerate) {
+            std::getline(std::cin, msg);
 
-        if(msg == "quit") {
-            break;
-        } else {
-            doWrite(msg);
+            if(msg == "quit") {
+                break;
+            } else {
+                doWrite(msg);
+            }
         }
+        
     }
 }
 
@@ -76,8 +83,8 @@ void Client::handleRead(const boost::system::error_code& error, std::size_t byte
         std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
         std::wstring text = converter.from_bytes(str);
         std::string resultTest = converter.to_bytes(text);
-
-        OneTimePad otp(text, L"дота");
+        std::wstring wkey = converter.from_bytes(this->key);
+        OneTimePad otp(text, wkey);
         text = otp.decipher();
         std::string result = converter.to_bytes(text);
 

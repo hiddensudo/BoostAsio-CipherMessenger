@@ -19,6 +19,9 @@ private:
     boost::asio::ip::tcp::socket socket_;
 
     boost::asio::streambuf readMsg;
+    
+    std::string key;
+    bool isKeyGenerate;
 public:
     Client(boost::asio::io_context& ioContext, const std::string& host, const std::string& port);
     ~Client();
